@@ -1,0 +1,101 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL") // configure no .env
+}
+
+model Categoria {
+  id       Int       @id @default(autoincrement())
+  nome     String    @db.VarChar(100)
+  slug     String    @unique @db.VarChar(100)
+  produtos Produto[]
+}
+
+model Produto {
+  id          Int        @id @default(autoincrement())
+  nome        String     @db.VarChar(150)
+  descricao   String?    // texto opcional
+  preco       Float
+  imagemUrl   String?    @map("imagem_url") // para mapear campo MySQL
+  estoque     Int        @default(0)
+  categoriaId Int?       @map("categoria_id")
+  criadoEm    DateTime   @default(now()) @map("criado_em")
+
+  categoria   Categoria? @relation(fields: [categoriaId], references: [id])
+  pedidoItens PedidoItem[]
+
+  @@index([categoriaId])
+}
+
+model User {
+  id          Int        @id @default(autoincrement())
+  nome        String?    @db.VarChar(100)
+  email       String     @unique @db.VarChar(150)
+  senhaHash   String     @map("senha_hash")
+  isAdmin     Boolean    @default(false) @map("is_admin")
+  criadoEm    DateTime   @default(now()) @map("criado_em")
+  atualizadoEm DateTime  @updatedAt @map("atualizado_em")
+
+  enderecos   Endereco[]
+  pedidos     Pedido[]
+}
+
+model Endereco {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  cep         String?  @db.VarChar(20)
+  rua         String?  @db.VarChar(150)
+  numero      String?  @db.VarChar(10)
+  complemento String?  @db.VarChar(100)
+  bairro      String?  @db.VarChar(100)
+  cidade      String?  @db.VarChar(100)
+  estado      String?  @db.VarChar(50)
+
+  user        User     @relation(fields: [userId], references: [id])
+  pedidos     Pedido[]
+
+  @@index([userId])
+}
+
+model Pedido {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @map("user_id")
+  enderecoId  Int        @map("endereco_id")
+  status      String     @default("pendente") @db.VarChar(50)
+  total       Float?
+  criadoEm    DateTime   @default(now()) @map("criado_em")
+
+  user        User       @relation(fields: [userId], references: [id])
+  endereco    Endereco   @relation(fields: [enderecoId], references: [id])
+  itens       PedidoItem[]
+
+  @@index([userId])
+  @@index([enderecoId])
+}
+
+model PedidoItem {
+  id           Int      @id @default(autoincrement())
+  pedidoId     Int      @map("pedido_id")
+  produtoId    Int      @map("produto_id")
+  quantidade   Int
+  precoUnitario Float    @map("preco_unitario")
+
+  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produto      Produto  @relation(fields: [produtoId], references: [id])
+
+  @@index([pedidoId])
+  @@index([produtoId])
+}
+
+model Cupom {
+  id                 Int      @id @default(autoincrement())
+  codigo             String   @unique @db.VarChar(50)
+  descontoPercentual  Float?   @map("desconto_percentual")
+  validoAte          DateTime? @map("valido_ate")
+  ativo              Boolean  @default(true)
+}
