@@ -78,7 +78,7 @@ const getOrderById = async (req, res) => {
     const order = await prisma.order.findUnique({
       where: {
         id: parseInt(id),
-        ...(userId && { userId: parseInt(userId) }), // Só adiciona userId se não for admin
+        ...(userId && { userId: parseInt(userId) }), // Só adiciona userId se não for admin d
       },
       include: {
         user: {
