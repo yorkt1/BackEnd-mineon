@@ -1,6 +1,0 @@
-services:
-  - type: web
-    name: backend-mineon
-    env: node
-    buildCommand: npm install
-    startCommand: node src/server.js
