@@ -29,6 +29,8 @@ app.get('/', (req, res) => {
   res.send('API do E-commerce funcionando!');
 });
 
+
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });

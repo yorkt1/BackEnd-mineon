@@ -10,15 +10,15 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
-        name,
+        nome: name,           // Campo correto do banco
         email,
-        passwordHash: hashedPassword,
-        isAdmin: false, // Por padrão, um usuário registrado não é admin
+        senhaHash: hashedPassword,
+        isAdmin: false,       // Usuário padrão não é admin
       },
     });
     res.status(201).json({ message: 'Usuário cadastrado com sucesso!', userId: user.id });
   } catch (error) {
-    console.error(error);
+    console.error('Erro no cadastro:', error);
     if (error.code === 'P2002') {
       return res.status(409).json({ message: 'Email já cadastrado.' });
     }
@@ -28,19 +28,19 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
+  console.log('Tentativa login:', email, password);
   try {
     const user = await prisma.user.findUnique({
       where: { email },
     });
-
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    console.log('Usuário achado:', user);
+    if (!user || !(await bcrypt.compare(password, user.senhaHash))) {
       return res.status(401).json({ message: 'Email ou senha inválidos.' });
     }
-
     const token = generateToken({ id: user.id, email: user.email, isAdmin: user.isAdmin });
     res.status(200).json({ token, isAdmin: user.isAdmin });
   } catch (error) {
-    console.error(error);
+    console.error('Erro no login:', error);
     res.status(500).json({ message: 'Erro ao fazer login.' });
   }
 };
