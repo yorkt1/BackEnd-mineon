@@ -7,6 +7,7 @@ import productRoutes from './routes/productRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import mongoose from 'mongoose';
 
 dotenv.config();
 
@@ -34,3 +35,8 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('✅ Conectado ao MongoDB'))
+  .catch((err) => console.error('❌ Erro na conexão MongoDB:', err));

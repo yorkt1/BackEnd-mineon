@@ -1,40 +1,24 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import Produto from '../models/produto.js';
 
 const getProducts = async (req, res) => {
   const { query, categoria } = req.query;
 
-  console.log('Recebido query:', query);
-  console.log('Recebido categoria:', categoria);
-
   try {
-    const products = await prisma.Produto.findMany({
-      where: {
-        AND: [
-          query
-            ? {
-                OR: [
-                  { nome: { contains: query, mode: 'insensitive' } },
-                  { descricao: { contains: query, mode: 'insensitive' } },
-                ],
-              }
-            : {},
-          categoria
-            ? {
-                categoria: {
-                  slug: categoria,
-                },
-              }
-            : {},
-        ],
-      },
-      include: {
-        categoria: true,
-      },
-    });
+    const filtros = {};
 
-    res.status(200).json(products);
+    if (query) {
+      filtros.$or = [
+        { nome: { $regex: query, $options: 'i' } },
+        { descricao: { $regex: query, $options: 'i' } },
+      ];
+    }
+
+    if (categoria) {
+      filtros.categoria = categoria;
+    }
+
+    const produtos = await Produto.find(filtros).populate('categoria');
+    res.status(200).json(produtos);
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     res.status(500).json({ message: 'Erro ao buscar produtos.' });
@@ -44,16 +28,9 @@ const getProducts = async (req, res) => {
 const getProductById = async (req, res) => {
   const { id } = req.params;
   try {
-    const product = await prisma.Produto.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        categoria: true,
-      },
-    });
-    if (!product) {
-      return res.status(404).json({ message: 'Produto não encontrado.' });
-    }
-    res.status(200).json(product);
+    const produto = await Produto.findById(id).populate('categoria');
+    if (!produto) return res.status(404).json({ message: 'Produto não encontrado.' });
+    res.status(200).json(produto);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao buscar produto.' });
@@ -61,19 +38,18 @@ const getProductById = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-  const { nome, descricao, preco, imagemUrl, estoque, categoriaId } = req.body;
+  const { nome, descricao, preco, imagemUrl, estoque, categoria } = req.body;
   try {
-    const product = await prisma.Produto.create({
-      data: {
-        nome,
-        descricao,
-        preco: parseFloat(preco),
-        imagemUrl,
-        estoque: parseInt(estoque),
-        categoriaId: categoriaId ? parseInt(categoriaId) : null,
-      },
+    const novoProduto = new Produto({
+      nome,
+      descricao,
+      preco,
+      imagemUrl,
+      estoque,
+      categoria,
     });
-    res.status(201).json(product);
+    await novoProduto.save();
+    res.status(201).json(novoProduto);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao criar produto.' });
@@ -82,20 +58,10 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { nome, descricao, preco, imagemUrl, estoque, categoriaId } = req.body;
+  const dados = req.body;
   try {
-    const product = await prisma.Produto.update({
-      where: { id: parseInt(id) },
-      data: {
-        nome,
-        descricao,
-        preco: parseFloat(preco),
-        imagemUrl,
-        estoque: parseInt(estoque),
-        categoriaId: categoriaId ? parseInt(categoriaId) : null,
-      },
-    });
-    res.status(200).json(product);
+    const produto = await Produto.findByIdAndUpdate(id, dados, { new: true });
+    res.status(200).json(produto);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Erro ao atualizar produto.' });
@@ -105,9 +71,7 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    await prisma.Produto.delete({
-      where: { id: parseInt(id) },
-    });
+    await Produto.findByIdAndDelete(id);
     res.status(204).send();
   } catch (error) {
     console.error(error);
